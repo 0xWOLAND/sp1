@@ -59,8 +59,8 @@ fn main() {
 
             let out_dir = env::var("OUT_DIR").unwrap();
             let dest_path = PathBuf::from(&out_dir);
-            let lib_path_a = dest_path.join(format!("lib{}.a", lib_name));
-            let lib_path_h = dest_path.join(format!("lib{}.h", lib_name));
+            let lib_path_a = dest_path.join(format!("lib{}.a", lib_name)); // libsp1gnark.a
+            let lib_path_h = dest_path.join(format!("lib{}.h", lib_name)); // libsp1gnark.h
 
             Command::new("docker")
                 .args(["create", "--name", temp_container, image_name])
@@ -69,7 +69,7 @@ fn main() {
             Command::new("docker")
                 .args([
                     "cp",
-                    &format!("{}:OUT_DIR/lib{}.h", temp_container, lib_name),
+                    &format!("{}:OUT_DIR/lib{}.h", temp_container, lib_name), // Copy libsp1gnark.h from container
                     lib_path_h.to_str().unwrap(),
                 ])
                 .status()
@@ -77,7 +77,7 @@ fn main() {
             Command::new("docker")
                 .args([
                     "cp",
-                    &format!("{}:OUT_DIR/lib{}.a", temp_container, lib_name),
+                    &format!("{}:OUT_DIR/lib{}.a", temp_container, lib_name), // Copy libsp1gnark.a from container
                     lib_path_a.to_str().unwrap(),
                 ])
                 .status()
@@ -87,6 +87,7 @@ fn main() {
             let header_dest = dest_path.join("babybear.h");
             std::fs::copy(header_src, header_dest).unwrap();
 
+            // Generate bindings using bindgen
             let header_path = dest_path.join(format!("lib{}.h", lib_name));
             let bindings = bindgen::Builder
                 ::default()
@@ -98,6 +99,8 @@ fn main() {
             bindings
                 .write_to_file(dest_path.join("bindings.rs"))
                 .expect("Couldn't write bindings!");
+
+            // Clean up
             Command::new("docker")
                 .args(["rm", temp_container])
                 .status()
